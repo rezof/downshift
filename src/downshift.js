@@ -497,6 +497,7 @@ class Downshift extends Component {
       const amount = event.shiftKey ? 5 : 1
       this.moveHighlightedIndex(amount, {
         type: Downshift.stateChangeTypes.keyDownArrowDown,
+        itemsMouseEventsDisabled: true,
       })
     },
 
@@ -505,6 +506,7 @@ class Downshift extends Component {
       const amount = event.shiftKey ? -5 : -1
       this.moveHighlightedIndex(amount, {
         type: Downshift.stateChangeTypes.keyDownArrowUp,
+        itemsMouseEventsDisabled: true,
       })
     },
 
@@ -685,19 +687,31 @@ class Downshift extends Component {
     return `${this.props.id}-item-${index}`
   }
 
-  getItemProps = ({
-    onMouseEnter,
-    onClick,
-    index,
-    item = requiredProp('getItemProps', 'item'),
-    ...rest
-  } = {}) => {
+  getItemProps = (
+    {
+      onMouseEnter,
+      onClick,
+      index,
+      item = requiredProp('getItemProps', 'item'),
+      ...rest
+    } = {},
+  ) => {
     if (index === undefined) {
       this.items.push(item)
       index = this.items.indexOf(item)
     } else {
       this.items[index] = item
     }
+
+    const itemInlineStyle = () => {
+      const styleWrapper = {
+        style: {
+          pointerEvents: 'none',
+        },
+      }
+      return this.getState().itemsMouseEventsDisabled ? styleWrapper : {}
+    }
+
     return {
       id: this.getItemId(index),
       onMouseEnter: composeEventHandlers(onMouseEnter, () => {
@@ -715,6 +729,7 @@ class Downshift extends Component {
       onClick: composeEventHandlers(onClick, () => {
         this.selectItemAtIndex(index)
       }),
+      ...itemInlineStyle(),
       ...rest,
     }
   }
@@ -803,13 +818,31 @@ class Downshift extends Component {
         )
       }
     }
+
+    // re-enabling item's mouse events on mouse move and click
+    const enableItemsMouseEvents = () => {
+      if (this.getState().itemsMouseEventsDisabled) {
+        this.internalSetState({itemsMouseEventsDisabled: false})
+      }
+    }
+
     this.props.environment.addEventListener('mousedown', onMouseDown)
     this.props.environment.addEventListener('mouseup', onMouseUp)
+    this.props.environment.addEventListener('mousemove', enableItemsMouseEvents)
+    this.props.environment.addEventListener('click', enableItemsMouseEvents)
 
     this.cleanup = () => {
       this._isMounted = false
       this.props.environment.removeEventListener('mousedown', onMouseDown)
       this.props.environment.removeEventListener('mouseup', onMouseUp)
+      this.props.environment.removeEventListener(
+        'mousemove',
+        enableItemsMouseEvents,
+      )
+      this.props.environment.removeEventListener(
+        'click',
+        enableItemsMouseEvents,
+      )
     }
   }
 

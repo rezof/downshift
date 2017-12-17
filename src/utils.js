@@ -254,6 +254,7 @@ const stateKeys = [
   'isOpen',
   'selectedItem',
   'type',
+  'itemsMouseEventsDisabled',
 ]
 /**
  * @param {Object} state The state object
